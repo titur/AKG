@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diákok kezelése</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      width: 300px;
+    }
+    li {
+      padding: 10px;
+      margin: 5px 0;
+      background-color: #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    li.selected {
+      background-color: #a0d3ff;
+    }
+    button {
+      margin-left: 5px;
+    }
+    input {
+      padding: 5px;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Diákok kezelése</h1>
+
+  <input type="text" id="newStudent" placeholder="Új diák neve">
+  <button onclick="addStudent()">Hozzáadás</button>
+  <br><br>
+
+  <ul id="studentList">
+    <li>Anna</li>
+    <li>Bence</li>
+    <li>Cecília</li>
+    <li>Dániel</li>
+    <li>Eszter</li>
+  </ul>
+
+  <button onclick="shuffleStudents()">Véletlenszerű sorrend</button>
+  <button onclick="deleteSelected()">Kiválasztott törlése</button>
+
+  <script>
+    const list = document.getElementById('studentList');
+
+    function addMoveButtons(li) {
+      const upBtn = document.createElement('button');
+      upBtn.textContent = '⬆';
+      upBtn.onclick = (e) => {
+        e.stopPropagation();
+        const prev = li.previousElementSibling;
+        if (prev) list.insertBefore(li, prev);
+      };
+
+      const downBtn = document.createElement('button');
+      downBtn.textContent = '⬇';
+      downBtn.onclick = (e) => {
+        e.stopPropagation();
+        const next = li.nextElementSibling;
+        if (next) list.insertBefore(next, li);
+      };
+
+      li.appendChild(upBtn);
+      li.appendChild(downBtn);
+    }
+
+    function initializeListItem(li) {
+      addMoveButtons(li);
+      li.onclick = () => {
+        list.querySelectorAll('li').forEach(item => item.classList.remove('selected'));
+        li.classList.add('selected');
+      };
+    }
+
+    // Inicializálás meglévő elemekhez
+    Array.from(list.children).forEach(initializeListItem);
+
+    // Hozzáadás
+    function addStudent() {
+      const input = document.getElementById('newStudent');
+      const name = input.value.trim();
+      if (name === "") return;
+      const li = document.createElement('li');
+      li.textContent = name;
+      initializeListItem(li);
+      list.appendChild(li);
+      input.value = "";
+    }
+
+    // Véletlenszerű sorrend
+    function shuffleStudents() {
+      const items = Array.from(list.children);
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        list.insertBefore(items[j], items[i]);
+        const temp = items[i];
+        items[i] = items[j];
+        items[j] = temp;
+      }
+    }
+
+    // Kiválasztott törlése
+    function deleteSelected() {
+      const selected = list.querySelector('li.selected');
+      if (selected) list.removeChild(selected);
+    }
+  </script>
+</body>
+</html>
