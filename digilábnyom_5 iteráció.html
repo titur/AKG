@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>Személyes adatok – önellenőrző játék</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: linear-gradient(135deg, #2f3e46, #52796f);
+    color: #f1f1f1;
+}
+
+header {
+    text-align: center;
+    padding: 24px 16px;
+}
+
+main {
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: center;
+}
+
+.cards {
+    max-width: 280px;
+}
+
+.card {
+    background: #f8f9fa;
+    color: #2b2b2b;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: grab;
+    margin-bottom: 10px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+
+.zones {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.dropzone {
+    flex: 1 1 220px;
+    min-height: 220px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15);
+}
+
+.dropzone.hovered {
+    background: rgba(255,255,255,0.2);
+}
+
+.correct { background: #c7e6c7 !important; }
+.wrong { background: #f2c1c1 !important; }
+
+button {
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: #84a98c;
+    color: #1f2d2b;
+    font-size: 1em;
+    margin-top: 10px;
+}
+
+button:hover {
+    background: #95b8a0;
+}
+
+.result {
+    max-width: 800px;
+    margin: 30px auto;
+    background: rgba(255,255,255,0.12);
+    padding: 20px;
+    border-radius: 16px;
+    line-height: 1.6;
+}
+
+.result a {
+    color: #dbeee2;
+    text-decoration: underline;
+}
+
+.result a:hover {
+    color: #ffffff;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Személyes adatok felismerése</h1>
+    <p>Húzd a kártyákat a megfelelő kategóriába, majd ellenőrizd magad!</p>
+</header>
+
+<main>
+    <div class="cards">
+        <h3>Kártyák</h3>
+
+        <div class="card" draggable="true" data-type="personal">Teljes név</div>
+        <div class="card" draggable="true" data-type="personal">Lakcím</div>
+        <div class="card" draggable="true" data-type="personal">Telefonszám</div>
+
+        <div class="card" draggable="true" data-type="sensitive">TAJ-szám</div>
+        <div class="card" draggable="true" data-type="sensitive">Egészségügyi adat</div>
+
+        <div class="card" draggable="true" data-type="nonpersonal">Kedvenc szín</div>
+        <div class="card" draggable="true" data-type="nonpersonal">Hobbi</div>
+        <div class="card" draggable="true" data-type="nonpersonal">Kedvenc film</div>
+    </div>
+
+    <div class="zones">
+        <div class="dropzone" data-accept="personal"><h3>🧍 Személyes adat</h3></div>
+        <div class="dropzone" data-accept="sensitive"><h3>🔒 Érzékeny személyes adat</h3></div>
+        <div class="dropzone" data-accept="nonpersonal"><h3>🎈 Nem személyes adat</h3></div>
+    </div>
+</main>
+
+<div style="text-align:center;">
+    <button onclick="checkAnswers()">Ellenőrzés</button>
+</div>
+
+<div class="result" id="result" style="display:none;"></div>
+
+<script>
+let draggedCard = null;
+
+document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('dragstart', () => draggedCard = card);
+});
+
+document.querySelectorAll('.dropzone').forEach(zone => {
+    zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        zone.classList.add('hovered');
+    });
+
+    zone.addEventListener('dragleave', () => zone.classList.remove('hovered'));
+
+    zone.addEventListener('drop', () => {
+        zone.classList.remove('hovered');
+        if (draggedCard) zone.appendChild(draggedCard);
+    });
+});
+
+function checkAnswers() {
+    let correct = 0;
+    let total = 0;
+    let mistakes = [];
+
+    document.querySelectorAll('.card').forEach(card => {
+        const parentType = card.parentElement.dataset.accept;
+        total++;
+
+        if (parentType === card.dataset.type) {
+            correct++;
+            card.classList.add("correct");
+        } else {
+            card.classList.add("wrong");
+            mistakes.push(card.textContent);
+        }
+    });
+
+    let html = `<h3>Eredmény</h3>
+        <p>✔️ Helyes válaszok: <strong>${correct} / ${total}</strong></p>`;
+
+    if (mistakes.length > 0) {
+        html += `<p>Érdemes még utánanézned ezeknek:</p><ul>`;
+        mistakes.forEach(m => html += `<li>${m}</li>`);
+        html += `</ul>
+
+        <p>Hasznos, megbízható oldalak:</p>
+        <ul>
+            <li>
+                <a href="https://school-education.ec.europa.eu/en/etwinning/projects/addressing-health-and-well-being-schools-and-beyond-healthschool/twinspace/pages/digital-wellbeing-and-screen-time-management" target="_blank">
+                EU School Education – Digitális jóllét és képernyőidő
+                </a>
+            </li>
+            <li>
+                <a href="https://www.edpb.europa.eu/sme-data-protection-guide/data-protection-basics_hu" target="_blank">
+                Európai Adatvédelmi Testület – Alapfogalmak (magyar)
+                </a>
+            </li>
+        </ul>`;
+    } else {
+        html += `<p>🎉 Minden választ jól találtál el. Magabiztosan eligazodsz a személyes adatok világában.</p>`;
+    }
+
+    const result = document.getElementById("result");
+    result.innerHTML = html;
+    result.style.display = "block";
+}
+</script>
+
+</body>
+</html>
