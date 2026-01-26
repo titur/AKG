@@ -1,234 +1,335 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-<meta charset="UTF-8">
-<title>Személyes adatok – önellenőrző játék</title>
-
-<style>
-body {
-    margin: 0;
-    font-family: "Segoe UI", system-ui, sans-serif;
-    background: linear-gradient(135deg, #2f3e46, #52796f);
-    color: #f1f1f1;
-}
-
-header {
-    text-align: center;
-    padding: 26px 18px;
-    max-width: 900px;
-    margin: auto;
-}
-
-header p {
-    font-size: 1.05em;
-    line-height: 1.6;
-    opacity: 0.95;
-}
-
-main {
-    padding: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-    justify-content: center;
-}
-
-.cards {
-    max-width: 280px;
-}
-
-.card {
-    background: #f8f9fa;
-    color: #2b2b2b;
-    padding: 12px;
-    border-radius: 10px;
-    cursor: grab;
-    margin-bottom: 10px;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-}
-
-.zones {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.dropzone {
-    flex: 1 1 220px;
-    min-height: 220px;
-    background: rgba(255,255,255,0.12);
-    border-radius: 14px;
-    padding: 14px;
-    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15);
-}
-
-.dropzone.hovered {
-    background: rgba(255,255,255,0.2);
-}
-
-.correct { background: #c7e6c7 !important; }
-.wrong { background: #f2c1c1 !important; }
-
-button {
-    padding: 12px 22px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    background: #84a98c;
-    color: #1f2d2b;
-    font-size: 1em;
-    margin-top: 14px;
-}
-
-button:hover {
-    background: #95b8a0;
-}
-
-.result {
-    max-width: 900px;
-    margin: 34px auto;
-    background: rgba(255,255,255,0.12);
-    padding: 22px;
-    border-radius: 18px;
-    line-height: 1.65;
-}
-
-.result a {
-    color: #e2f3ea;
-    text-decoration: underline;
-}
-
-.result a:hover {
-    color: #ffffff;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Self-Awareness Blueprint v13.2</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bp-blue: #0a192f; --bp-cyan: #00d2ff; --bp-white: #e6f1ff; --bp-regen: #22c55e; }
+        body { 
+            background-color: var(--bp-blue); 
+            background-image: radial-gradient(circle, #17365d 1px, transparent 1px);
+            background-size: 25px 25px;
+            font-family: 'Space Mono', monospace; color: var(--bp-white); 
+        }
+        .blueprint-border { border: 2px solid var(--bp-cyan); background: rgba(10, 25, 47, 0.95); box-shadow: 4px 4px 0px rgba(0, 210, 255, 0.3); }
+        .data-card { border: 1px solid var(--bp-cyan); cursor: pointer; padding: 4px; font-size: 10px; background: rgba(0, 210, 255, 0.05); }
+        .selected-card { border-color: #ff00ff !important; box-shadow: 0 0 10px #ff00ff; }
+        .drop-zone { border: 2px dashed rgba(0, 210, 255, 0.2); min-height: 80px; }
+        input { background: rgba(0, 210, 255, 0.1); border: 1px solid var(--bp-cyan); color: var(--bp-cyan); text-align: center; border-radius: 4px; }
+        .btn-main { background: var(--bp-cyan); color: var(--bp-blue); font-weight: bold; padding: 10px 20px; text-transform: uppercase; }
+        .btn-main:hover { filter: brightness(1.2); }
+        #battery-icon { font-size: 3.5rem; transition: all 0.5s ease; }
+        .perk-tag { background: rgba(0, 255, 65, 0.1); padding: 4px 8px; border: 1px solid #00ff41; font-size: 9px; color: #00ff41; margin-top: 4px; border-radius: 2px; }
+        .error-links { display: none; background: rgba(255, 0, 0, 0.1); border: 1px solid red; padding: 10px; margin-top: 10px; }
+        #finish-overlay { display: none; position: fixed; inset: 0; background: rgba(10, 25, 47, 0.98); z-index: 2000; align-items: center; justify-content: center; backdrop-blur: 10px; }
+        
+        /* Export beállítások: a mentett képen látszódjanak az értékek, de a gombok ne */
+        .export-mode #finish-btn, .export-mode #sync-btn, .export-mode #validate-btn { display: none !important; }
+        .export-mode input { border: none !important; background: transparent !important; color: white !important; -webkit-appearance: none; margin: 0; }
+    </style>
 </head>
+<body class="p-4 md:p-8">
 
-<body>
-
-<header>
-    <h1>Személyes adatok – gondolkodj digitálisan</h1>
-    <p>
-        Naponta rengeteg információt osztunk meg magunkról – néha tudatosan, néha észrevétlenül.
-        Ebben a játékban azt próbálhatod ki, hogy mennyire ismered fel,
-        <strong>mi számít személyes adatnak</strong>, és mi az, ami elsőre annak tűnhet,
-        de valójában nem az.
-        <br><br>
-        Nincs időnyomás és nincs verseny – a cél az, hogy jobban eligazodj a digitális világban.
-    </p>
-</header>
-
-<main>
-    <div class="cards">
-        <h3>Kártyák</h3>
-
-        <div class="card" draggable="true" data-type="personal">Teljes név</div>
-        <div class="card" draggable="true" data-type="personal">Lakcím</div>
-        <div class="card" draggable="true" data-type="personal">Telefonszám</div>
-
-        <div class="card" draggable="true" data-type="sensitive">TAJ-szám</div>
-        <div class="card" draggable="true" data-type="sensitive">Egészségügyi adat</div>
-
-        <div class="card" draggable="true" data-type="nonpersonal">Kedvenc szín</div>
-        <div class="card" draggable="true" data-type="nonpersonal">Hobbi</div>
-        <div class="card" draggable="true" data-type="nonpersonal">Kedvenc film</div>
+<div id="init-screen" class="fixed inset-0 z-[1000] bg-slate-950 flex items-center justify-center p-6 text-center">
+    <div class="max-w-xl blueprint-border p-10">
+        <h1 class="text-2xl font-bold text-cyan-400 mb-4 tracking-tighter uppercase">Rendszer_Inicializálás...</h1>
+        <p class="text-xs leading-relaxed opacity-80 mb-8 uppercase tracking-widest text-left">
+            Figyelem, biológiai egység! <br><br>
+            A központi processzor észlelte a digitális jelenlétedet. Az önbevallásos protokoll előtt át kell menned az <b>ÖNHATÓSÁGI ADATVIZSGÁLATON</b>. Rendezd az adatokat, vagy irány a továbbképzés!
+        </p>
+        <button id="start-btn" class="btn-main w-full">Protokoll indítása_</button>
     </div>
-
-    <div class="zones">
-        <div class="dropzone" data-accept="personal"><h3>🧍 Személyes adat</h3></div>
-        <div class="dropzone" data-accept="sensitive"><h3>🔒 Érzékeny személyes adat</h3></div>
-        <div class="dropzone" data-accept="nonpersonal"><h3>🎈 Nem személyes adat</h3></div>
-    </div>
-</main>
-
-<div style="text-align:center;">
-    <button onclick="checkAnswers()">Ellenőrzés</button>
 </div>
 
-<div class="result" id="result" style="display:none;"></div>
+<div id="finish-overlay">
+    <div class="max-w-2xl blueprint-border p-10 text-center relative">
+        <h2 class="text-2xl font-bold text-green-400 mb-2 uppercase">ÖNELLENŐRZÉS ELVÉGEZVE ✅</h2>
+        <p class="text-[10px] mb-6 text-cyan-300 italic opacity-80">Mély munka akárhol is áll, utat nyit a továbblépésre.</p>
+        
+        <div class="bg-blue-900/40 p-6 border border-cyan-500 mb-6 text-left">
+            <label class="text-xs text-cyan-400 font-bold block mb-2 uppercase">VÉGSŐ KÉRDÉS: Ha visszakapnál napi 1 órát az életedből, mire használnád?</label>
+            <input type="text" id="final-wish-input" class="w-full p-3 bg-black/50 border border-cyan-500 text-white italic text-sm" placeholder="Írd ide a vágyad...">
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <button id="final-export-btn" class="btn-main bg-white text-blue-950">Gratuláció és Archiválás (.PNG)</button>
+            <button onclick="document.getElementById('finish-overlay').style.display='none'" class="text-[10px] text-gray-500 uppercase hover:text-white mt-2">Finomhangolás</button>
+        </div>
+    </div>
+</div>
+
+<main class="max-w-6xl mx-auto space-y-6" id="capture-area">
+    
+    <section id="phase-1" class="blueprint-border p-6">
+        <h2 class="text-cyan-400 font-bold mb-1 uppercase text-sm"># Modul_01: Adatbiztonsági Szűrés</h2>
+        <div id="card-pool" class="flex flex-wrap gap-2 justify-center mb-6 p-4 border border-dashed border-cyan-500/30"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="space-y-2"><span class="text-[10px] uppercase">Személyes_Zóna</span><div class="drop-zone p-2" data-cat="szemelyes"></div></div>
+            <div class="space-y-2"><span class="text-[10px] uppercase text-cyan-300">Különleges_Zóna</span><div class="drop-zone p-2" data-cat="kulonleges"></div></div>
+            <div class="space-y-2"><span class="text-[10px] uppercase opacity-40">Nyilvános_Zóna</span><div class="drop-zone p-2" data-cat="nem-szemelyes"></div></div>
+        </div>
+        <div id="error-module" class="error-links text-[10px]">
+            <p class="text-red-500 font-bold mb-1 uppercase italic">Hiba a mátrixban: Nem minden adat van a helyén!</p>
+            <div class="flex flex-col gap-1 underline italic text-cyan-400">
+                <a href="https://www.nkp.hu/tankonyv/digitalis-kultura-7-nat2020/lecke_03_003" target="_blank">1. Digitális Lábnyom Segédlet (NKP)</a>
+                <a href="https://www.edpb.europa.eu/sme-data-protection-guide/faq-frequently-asked-questions/answer/what-personal-data_hu" target="_blank">2. EDPB Hivatalos GDPR meghatározás</a>
+            </div>
+        </div>
+        <div class="text-center mt-6"><button id="validate-btn" class="btn-main text-xs">Validálás és Belépés_</button></div>
+    </section>
+
+    <section id="dashboard" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="blueprint-border p-6 lg:col-span-3 flex flex-col md:flex-row justify-between items-center gap-6 relative">
+                <div>
+                    <span class="text-[10px] text-cyan-400 uppercase italic font-bold">Napi Összesített Átlag</span>
+                    <h2 id="dash-avg" class="text-7xl font-bold leading-none">0.0h</h2>
+                    <span id="dash-total" class="text-xs text-pink-500 font-bold block mt-2 uppercase">HETI Σ: 0h</span>
+                </div>
+
+                <div id="export-wish-display" class="hidden flex-grow max-w-sm px-4 text-center border-x border-cyan-500/20 italic">
+                    <div class="text-[8px] text-cyan-500 uppercase font-bold not-italic mb-1 underline">Időtranzakció kezdeményezése az alábbi területen:</div>
+                    <div id="wish-text" class="text-xs text-cyan-100"></div>
+                </div>
+
+                <div class="space-y-2 text-xs w-full md:w-48">
+                    <div class="flex justify-between border-b border-cyan-500/20 py-1 text-green-400"><span>AKTÍV (A):</span> <span id="dash-a">0.0h</span></div>
+                    <div class="flex justify-between border-b border-cyan-500/20 py-1 text-pink-400"><span>PASSZÍV (P):</span> <span id="dash-p">0.0h</span></div>
+                    <div class="flex justify-between py-1 opacity-50"><span>📱 TELEFON:</span> <span id="dash-sync">0.0h</span></div>
+                    <div id="sync-warning" class="hidden text-[8px] text-red-500 font-bold uppercase animate-pulse">! Inkonzisztencia észlelve !</div>
+                </div>
+            </div>
+
+            <div class="blueprint-border p-4 flex flex-col items-center justify-center relative">
+                <canvas id="pieChart" width="115" height="115"></canvas>
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none mt-4">
+                    <span id="battery-icon">🔋</span>
+                </div>
+                <div class="text-[7px] mt-2 uppercase text-center flex flex-col font-bold">
+                    <span id="legend-screen" style="color: #00d2ff">Képernyő</span>
+                    <span id="legend-regen" style="color: #22c55e">Regeneráció</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="blueprint-border p-4 overflow-x-auto">
+            <h3 class="text-xs font-bold text-cyan-400 uppercase mb-4 tracking-widest">II. Modul: Digitális Önnapló</h3>
+            <table class="w-full text-[10px] text-center border-separate border-spacing-1 uppercase">
+                <thead>
+                    <tr class="text-cyan-400">
+                        <th class="p-2 text-left">CIKLUS</th>
+                        <th>Social(P)</th><th>Video(P)</th><th>Játék(P)</th>
+                        <th class="text-green-400">Játék(A)</th><th class="text-green-400">Tanulás</th><th class="text-green-400">Alkotás</th>
+                        <th>Egyéb(P)</th><th class="text-green-400">Egyéb(A)</th><th class="text-white">Σ</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="blueprint-border p-6 h-[320px]"><canvas id="barChart"></canvas></div>
+            <div class="flex flex-col gap-4">
+                <div id="feedback-panel" class="blueprint-border p-6 border-l-8 border-l-green-500 flex-grow">
+                    <div id="fb-status" class="text-xl font-bold uppercase mb-1">Analízis...</div>
+                    <div id="fb-text" class="text-[10px] opacity-90 italic leading-tight mb-3"></div>
+                    <div id="fb-advice" class="text-[10px] text-cyan-300 font-bold mb-4 p-2 bg-cyan-950/50 rounded"></div>
+                    <div id="career-text" class="flex flex-wrap gap-1"></div>
+                </div>
+                <div class="blueprint-border p-4 space-y-3">
+                    <div class="flex justify-between items-center text-[9px] text-cyan-400 uppercase font-bold leading-tight">
+                        <span>Telefon Napi Átlag (h:m)</span>
+                        <span class="opacity-50 text-right">iOS: Beállítások > Képernyőidő<br>Android: Digitális Jólét</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="number" id="phone-h" placeholder="óra" class="p-2 w-1/4 font-bold" min="0">
+                        <input type="number" id="phone-m" placeholder="perc" class="p-2 w-1/4 font-bold" min="0" max="59">
+                        <button id="sync-btn" class="btn-main text-[10px] flex-grow">Rögzítés_</button>
+                    </div>
+                    <button id="finish-btn" class="hidden w-full btn-main border-2 border-white">Analízis Mentése ✅</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
 
 <script>
-let draggedCard = null;
+    let bChart, pChart, phoneTotalHours = 0, selectedElement = null;
 
-document.querySelectorAll('.card').forEach(card => {
-    card.addEventListener('dragstart', () => draggedCard = card);
-});
+    document.getElementById('start-btn').onclick = () => { document.getElementById('init-screen').style.display = 'none'; initApp(); };
 
-document.querySelectorAll('.dropzone').forEach(zone => {
-    zone.addEventListener('dragover', e => {
-        e.preventDefault();
-        zone.classList.add('hovered');
-    });
-    zone.addEventListener('dragleave', () => zone.classList.remove('hovered'));
-    zone.addEventListener('drop', () => {
-        zone.classList.remove('hovered');
-        if (draggedCard) zone.appendChild(draggedCard);
-    });
-});
+    function initApp() {
+        const cards = [
+            { t: "Telefonszám", c: "szemelyes" }, { t: "IP Cím", c: "szemelyes" },
+            { t: "GPS Helyzet", c: "szemelyes" }, { t: "Ujjlenyomat", c: "kulonleges" },
+            { t: "Politikai nézet", c: "kulonleges" }, { t: "Vallás", c: "kulonleges" },
+            { t: "Email cím", c: "szemelyes" }, { t: "Busz menetrend", c: "nem-szemelyes" },
+            { t: "Időjárás", c: "nem-szemelyes" }, { t: "Arc-ID", c: "kulonleges" }
+        ];
+        const pool = document.getElementById('card-pool');
+        cards.sort(() => 0.5 - Math.random()).forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'data-card uppercase font-bold';
+            div.innerText = item.t; div.dataset.target = item.c;
+            div.onclick = (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.data-card').forEach(c => c.classList.remove('selected-card'));
+                div.classList.add('selected-card');
+                selectedElement = div;
+            };
+            pool.appendChild(div);
+        });
 
-function checkAnswers() {
-    let correct = 0;
-    let total = 0;
-    let mistakes = [];
-
-    document.querySelectorAll('.card').forEach(card => {
-        total++;
-        if (card.parentElement.dataset.accept === card.dataset.type) {
-            correct++;
-            card.classList.add("correct");
-        } else {
-            card.classList.add("wrong");
-            mistakes.push(card.textContent);
-        }
-    });
-
-    let html = `<h3>Eredmény</h3>
-        <p>✔️ Jól besorolt adatok: <strong>${correct} / ${total}</strong></p>`;
-
-    if (mistakes.length > 0) {
-        html += `<p>Ezeknél érdemes még egy kicsit utánanézned:</p><ul>`;
-        mistakes.forEach(m => html += `<li>${m}</li>`);
-        html += `</ul>
-
-        <p>Ajánlott, érthető források:</p>
-        <ul>
-            <li>
-                <a href="https://www.edpb.europa.eu/sme-data-protection-guide/data-protection-basics_hu" target="_blank">
-                Európai Adatvédelmi Testület – Alapfogalmak (magyar)
-                </a>
-            </li>
-            <li>
-                <a href="https://www.saferinternet.hu/fiataloknak" target="_blank">
-                Safer Internet Magyarország – Fiataloknak
-                </a>
-            </li>
-            <li>
-                <a href="https://www.bbc.co.uk/bitesize/topics/z3tkng8" target="_blank">
-                BBC Bitesize – Online safety (angol, diákbarát)
-                </a>
-            </li>
-        </ul>`;
-    } else {
-        html += `<p>🎉 Minden választ jól találtál el. Tudatosan kezeled a személyes adatokat.</p>`;
+        document.querySelectorAll('.drop-zone, #card-pool').forEach(zone => {
+            zone.onclick = () => { if(selectedElement) { zone.appendChild(selectedElement); selectedElement.classList.remove('selected-card'); selectedElement = null; } };
+        });
+        initTable(); initCharts();
     }
 
-    html += `
-        <hr>
-        <p><strong>Digitális lábnyom ellenőrzés:</strong><br>
-        Ha kíváncsi vagy, milyen nyomot hagyunk magunk után online, ezt az oldalt mindenképp nézd meg:</p>
-        <p>
-        <a href="https://education.ec.europa.eu/en/etwinning/projects/addressing-health-and-well-being-schools-and-beyond-healthschool/twinspace/pages/digital-wellbeing-and-screen-time-management" target="_blank">
-        Digitális jóllét és képernyőidő – EU School Education
-        </a>
-        </p>
-    `;
+    function initTable() {
+        const days = ["HÉTFŐ", "KEDD", "SZERDA", "CSÜT.", "PÉNTEK", "SZOMBAT", "VASÁRNAP"];
+        const tbody = document.getElementById('table-body');
+        days.forEach(day => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td class="p-2 text-left font-bold text-cyan-400">${day}</td>` +
+                `<td><input type="number" step="0.5" class="v p-v w-10"></td>`.repeat(3) +
+                `<td><input type="number" step="0.5" class="v a-v w-10"></td>`.repeat(3) +
+                `<td><input type="number" step="0.5" class="v p-v w-10"></td>` +
+                `<td><input type="number" step="0.5" class="v a-v w-10"></td>` +
+                `<td class="sum-c font-bold text-white">0</td>`;
+            tbody.appendChild(row);
+        });
+        document.querySelectorAll('.v').forEach(i => i.addEventListener('input', calculate));
+    }
 
-    const result = document.getElementById("result");
-    result.innerHTML = html;
-    result.style.display = "block";
-}
+    function initCharts() {
+        pChart = new Chart(document.getElementById('pieChart'), {
+            type: 'doughnut', data: { datasets: [{ data: [1, 23], backgroundColor: ['#00d2ff', '#22c55e'], borderWidth: 0 }] },
+            options: { cutout: '80%', plugins: { legend: { display: false } } }
+        });
+        bChart = new Chart(document.getElementById('barChart'), {
+            type: 'bar', data: { labels: ['Én', 'Világ', 'Limit'], datasets: [{ data: [0, 6.7, 4], backgroundColor: ['#00ff41', '#e6f1ff', 'rgba(0, 210, 255, 0.2)'] }] },
+            options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 24, ticks: { color: '#00d2ff' } } }, plugins: { legend: { display: false } } }
+        });
+    }
+
+    function calculate() {
+        let t = 0, aT = 0, pT = 0, filled = 0, gA = 0, lA = 0, cA = 0;
+        document.querySelectorAll('#table-body tr').forEach(row => {
+            let rA = 0, rP = 0;
+            row.querySelectorAll('.a-v').forEach(i => rA += (parseFloat(i.value) || 0));
+            row.querySelectorAll('.p-v').forEach(i => rP += (parseFloat(i.value) || 0));
+            const rSum = rA + rP;
+            if(rSum > 24) { row.querySelectorAll('input').forEach(i => i.value = 0); return; }
+            if(rSum > 0) filled++;
+            row.querySelector('.sum-c').innerText = rSum.toFixed(1);
+            t += rSum; aT += rA; pT += rP;
+            gA += (parseFloat(row.cells[4].firstChild.value) || 0);
+            lA += (parseFloat(row.cells[5].firstChild.value) || 0);
+            cA += (parseFloat(row.cells[6].firstChild.value) || 0);
+        });
+
+        const tableAvg = t / 7;
+        const finalAvg = Math.max(tableAvg, phoneTotalHours);
+        const pAvg = pT / 7;
+
+        document.getElementById('dash-avg').innerText = finalAvg.toFixed(1) + "h";
+        document.getElementById('dash-total').innerText = `HETI Σ: ${t.toFixed(1)}h`;
+        document.getElementById('dash-a').innerText = (aT / 7).toFixed(1) + "h";
+        document.getElementById('dash-p').innerText = pAvg.toFixed(1) + "h";
+        document.getElementById('dash-sync').innerText = phoneTotalHours.toFixed(1) + "h";
+
+        if(phoneTotalHours > tableAvg + 0.1) document.getElementById('sync-warning').classList.remove('hidden');
+        else document.getElementById('sync-warning').classList.add('hidden');
+
+        updateVisuals(finalAvg, pAvg, filled, gA/7, lA/7, cA/7);
+    }
+
+    function updateVisuals(avg, pAvg, filled, gA, lA, cA) {
+        const s = document.getElementById('fb-status'), t = document.getElementById('fb-text'), adv = document.getElementById('fb-advice'), c = document.getElementById('career-text'), p = document.getElementById('feedback-panel'), batt = document.getElementById('battery-icon');
+        let color = "#00ff41", msg = "Rendszer zöldön. A biológiai egység tudatos.", statusText = "OPTIMÁLIS_MOD", battIcon = "🔋", tip = "Tanács: Minden nap tarts 1 óra 'offline' blokkot, amikor a telefon egy másik szobában van.";
+
+        if(avg > 12) { 
+            color = "#ff0000"; statusText = "RENDSZERÖSSZEOMLÁS"; 
+            msg = "KRITIKUS: Az agyad egy túlforrósodott szerver."; 
+            tip = "DRASZTIKUS TANÁCS: 24 órás teljes digitális böjt javasolt. Ne nyúlj kijelzőhöz, olvass papír alapú könyvet!";
+            battIcon = "🔌"; 
+        }
+        else if(avg > 8) { 
+            color = "#ffbf00"; statusText = "TÚLMELEGEDÉS"; 
+            msg = "Vigyázat! A kognitív készletek merülnek."; 
+            tip = "TANÁCS: Töröld a 3 legtöbbet használt appodat 3 napra. Meg fogsz lepődni, mennyi időd szabadul fel.";
+            battIcon = "🪫"; 
+        }
+        else if(avg > 5) { 
+            color = "#00d2ff"; statusText = "SZAKADOZÓ_JEL"; 
+            msg = "Digitális köd észlelhető."; 
+            tip = "TANÁCS: Kapcsolj ki minden nem-emberi (app) értesítést. Csak a hívások maradjanak.";
+            battIcon = "🪫"; 
+        }
+
+        if (pAvg > 7) { 
+            statusText = "ZOMBIOID_MUTÁCIÓ"; msg = "VESZÉLY: A passzív fogyasztás felemészti a kreativitást."; 
+            tip = "TANÁCS: Mielőtt elindítasz egy videót, kérdezd meg: 'Tanulok ebből valamit, vagy csak menekülök az unalom elől?'";
+            color = "#8800ff"; 
+        }
+
+        if (filled > 0 || phoneTotalHours > 0) {
+            document.getElementById('finish-btn').classList.remove('hidden');
+            s.innerText = statusText; s.style.color = color; p.style.borderColor = color; t.innerText = msg; adv.innerText = tip; batt.innerText = battIcon;
+            pChart.data.datasets[0].data = [avg, Math.max(1, 24 - avg)];
+            pChart.data.datasets[0].backgroundColor = [color, '#22c55e'];
+            pChart.update();
+            document.getElementById('legend-screen').style.color = color;
+            bChart.data.datasets[0].data[0] = avg; bChart.data.datasets[0].backgroundColor[0] = color; bChart.update();
+            
+            let cr = [];
+            if(gA > 1) cr.push('<div class="perk-tag">🕹️ GAME TESTER CAREER OPENING</div>');
+            if(cA > 1) cr.push('<div class="perk-tag">🎨 DIGITÁLIS DA VINCI PERK</div>');
+            if(lA > 1) cr.push('<div class="perk-tag">🧠 CYBER-PROFESSZOR MODUL</div>');
+            c.innerHTML = cr.join("");
+        }
+    }
+
+    document.getElementById('sync-btn').onclick = () => {
+        const h = parseFloat(document.getElementById('phone-h').value) || 0;
+        const m = parseFloat(document.getElementById('phone-m').value) || 0;
+        phoneTotalHours = h + (m / 60);
+        calculate();
+    };
+
+    document.getElementById('validate-btn').onclick = () => {
+        const cards = document.querySelectorAll('.drop-zone .data-card');
+        const isOk = Array.from(cards).every(c => c.dataset.target === c.parentElement.dataset.cat);
+        if (isOk && cards.length === 10) { document.getElementById('phase-1').style.display = 'none'; document.getElementById('dashboard').classList.remove('hidden'); }
+        else { document.getElementById('error-module').style.display = 'block'; }
+    };
+
+    document.getElementById('finish-btn').onclick = () => { document.getElementById('finish-overlay').style.display = 'flex'; };
+    
+    document.getElementById('final-export-btn').onclick = () => {
+        const wish = document.getElementById('final-wish-input').value;
+        const display = document.getElementById('export-wish-display');
+        document.getElementById('wish-text').innerText = wish ? `"${wish}"` : "Cél: Analóg egyensúly megteremtése.";
+        display.classList.remove('hidden');
+        
+        document.getElementById('finish-overlay').style.display = 'none';
+        const el = document.getElementById('capture-area');
+        el.classList.add('export-mode');
+        
+        setTimeout(() => {
+            html2canvas(el, { backgroundColor: '#0a192f', scale: 2 }).then(c => {
+                const a = document.createElement('a'); a.download = 'Digital_Mindfulness_Report.png'; a.href = c.toDataURL(); a.click();
+                el.classList.remove('export-mode');
+                display.classList.add('hidden');
+            });
+        }, 200);
+    };
 </script>
-
 </body>
 </html>
